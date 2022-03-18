@@ -9,6 +9,8 @@ import (
 	"strconv"
 )
 
+var WriteBytes int
+
 func checkError(e error) {
 	if e != nil {
 		log.Fatal(e)
@@ -32,6 +34,27 @@ func readBlock(f *os.File, offset, size int) []byte {
 	return buffer[0:n]
 }
 
+func syncFiles(src *os.File, dst *os.File, offset *int, size int) bool {
+
+	//writeBytes := 0
+	crcTable := crc64.MakeTable(crc64.ISO)
+	srcData := readBlock(src, *offset, size)
+	if srcData == nil {
+		return true
+	}
+
+	dstData := readBlock(dst, *offset, size)
+	if crc64.Checksum(srcData, crcTable) != crc64.Checksum(dstData, crcTable) {
+		_, err := dst.WriteAt(srcData, int64(*offset))
+		checkError(err)
+		WriteBytes += len(srcData)
+		fmt.Println(WriteBytes)
+	}
+
+	 *offset += size
+	return false
+}
+
 func main() {
 	arguments := os.Args
 	if len(arguments) != 4 {
@@ -50,29 +73,31 @@ func main() {
 	checkError(err)
 	defer dst.Close()
 
-	crcTable := crc64.MakeTable(crc64.ISO)
+	//crcTable := crc64.MakeTable(crc64.ISO)
 	idx := 0
-	writeBytes := 0
+	WriteBytes := 0
 
 	for {
 
-		srcData := readBlock(src, idx, bufferSize)
-		if srcData == nil {
-			break
-		}
+		if syncFiles(src, dst, &idx, bufferSize) { return }
 
-		dstData := readBlock(dst, idx, bufferSize)
-		if crc64.Checksum(srcData, crcTable) != crc64.Checksum(dstData, crcTable) {
-			_, err := dst.WriteAt(srcData, int64(idx))
-			checkError(err)
+//		srcData := readBlock(src, idx, bufferSize)
+//		if srcData == nil {
+//			break
+//		}
 
-			writeBytes += len(srcData)
+//		dstData := readBlock(dst, idx, bufferSize)
+//		if crc64.Checksum(srcData, crcTable) != crc64.Checksum(dstData, crcTable) {
+//			_, err := dst.WriteAt(srcData, int64(idx))
+//			checkError(err)
+//
+//			WriteBytes += len(srcData)
 			//fmt.Println(string(srcData))
-		}
+//		}
 
-		idx += bufferSize
+//		idx += bufferSize
 
 	}
 
-	fmt.Printf("Write %d blocks, %d bytes\n", writeBytes/bufferSize, writeBytes)
+	fmt.Printf("Write %d blocks, %d bytes\n", WriteBytes/bufferSize, WriteBytes)
 }
