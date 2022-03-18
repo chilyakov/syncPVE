@@ -48,7 +48,7 @@ func syncFiles(src *os.File, dst *os.File, offset *int, size int) bool {
 		_, err := dst.WriteAt(srcData, int64(*offset))
 		checkError(err)
 		writeBytes += len(srcData)
-		fmt.Printf("block %f recorded\n", float64(writeBytes/size))
+		fmt.Printf("block %d recorded\n", writeBytes/size)
 	}
 
 	*offset += size
