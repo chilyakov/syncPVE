@@ -11,8 +11,8 @@ import (
 
 func checkError(e error) {
     if e != nil {
-		log.Fatal(e)
-		return
+	log.Fatal(e)
+	return
     }
 }
 
@@ -48,7 +48,7 @@ func main() {
 	defer src.Close()
 
 	dst, err := os.OpenFile(os.Args[3], os.O_RDWR|os.O_CREATE, 0644)
-    checkError(err)
+    	checkError(err)
 	defer dst.Close()
 
 	crcTable := crc64.MakeTable(crc64.ISO)
