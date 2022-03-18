@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"strconv"
+	//	"math"
 )
 
 var writeBytes int
@@ -39,7 +40,7 @@ func syncFiles(src *os.File, dst *os.File, offset *int, size int) bool {
 	crcTable := crc64.MakeTable(crc64.ISO)
 	srcData := readBlock(src, *offset, size)
 	if srcData == nil {
-		return true
+		return true //end of source file
 	}
 
 	dstData := readBlock(dst, *offset, size)
@@ -47,10 +48,10 @@ func syncFiles(src *os.File, dst *os.File, offset *int, size int) bool {
 		_, err := dst.WriteAt(srcData, int64(*offset))
 		checkError(err)
 		writeBytes += len(srcData)
-		fmt.Printf("block %d recorded\n", writeBytes/size)
+		fmt.Printf("block %f recorded\n", float64(writeBytes/size))
 	}
 
-	 *offset += size
+	*offset += size
 	return false
 }
 
