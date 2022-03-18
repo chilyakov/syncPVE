@@ -47,7 +47,7 @@ func syncFiles(src *os.File, dst *os.File, offset *int, size int) bool {
 		_, err := dst.WriteAt(srcData, int64(*offset))
 		checkError(err)
 		writeBytes += len(srcData)
-		fmt.Printf("write block %d\n", writeBytes/size)
+		fmt.Printf("block %d recorded\n", writeBytes/size)
 	}
 
 	 *offset += size
@@ -77,7 +77,7 @@ func main() {
 	for {
 
 		if syncFiles(src, dst, &idx, bufferSize) {
-			fmt.Printf("total %d blocks, %d bytes\n", writeBytes/bufferSize, writeBytes)
+			fmt.Printf("total %d blocks, %d bytes recorded\n", writeBytes/bufferSize, writeBytes)
 			return
 		}
 
