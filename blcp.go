@@ -7,7 +7,6 @@ import (
 	"log"
 	"os"
 	"strconv"
-	//	"math"
 )
 
 var writeBytes, offset, writeBlocks int
@@ -80,7 +79,5 @@ func main() {
 			fmt.Printf("total %d blocks, %d bytes was recorded\n", writeBlocks, writeBytes)
 			return
 		}
-
 	}
-
 }
