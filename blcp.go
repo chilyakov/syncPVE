@@ -10,7 +10,7 @@ import (
 	//	"math"
 )
 
-var writeBytes int
+var writeBytes, offset, writeBlocks int
 
 func checkError(e error) {
 	if e != nil {
@@ -19,7 +19,7 @@ func checkError(e error) {
 	}
 }
 
-func readBlock(f *os.File, offset, size int) []byte {
+func readBlock(f *os.File, size int) []byte {
 	buffer := make([]byte, size)
 
 	n, err := f.ReadAt(buffer, int64(offset))
@@ -35,23 +35,24 @@ func readBlock(f *os.File, offset, size int) []byte {
 	return buffer[0:n]
 }
 
-func syncFiles(src *os.File, dst *os.File, offset *int, size int) bool {
+func syncFiles(src *os.File, dst *os.File, size int) bool {
 
 	crcTable := crc64.MakeTable(crc64.ISO)
-	srcData := readBlock(src, *offset, size)
+	srcData := readBlock(src, size)
 	if srcData == nil {
 		return true //end of source file
 	}
 
-	dstData := readBlock(dst, *offset, size)
+	dstData := readBlock(dst, size)
 	if crc64.Checksum(srcData, crcTable) != crc64.Checksum(dstData, crcTable) {
-		_, err := dst.WriteAt(srcData, int64(*offset))
+		_, err := dst.WriteAt(srcData, int64(offset))
 		checkError(err)
 		writeBytes += len(srcData)
-		fmt.Printf("block %d recorded\n", writeBytes/size)
+		writeBlocks ++
+		fmt.Printf("block %d was recorded\n", writeBlocks)
 	}
 
-	*offset += size
+	offset += size
 	return false
 }
 
@@ -73,12 +74,10 @@ func main() {
 	checkError(err)
 	defer dst.Close()
 
-	idx := 0
-
 	for {
 
-		if syncFiles(src, dst, &idx, bufferSize) {
-			fmt.Printf("total %d blocks, %d bytes recorded\n", writeBytes/bufferSize, writeBytes)
+		if syncFiles(src, dst, bufferSize) {
+			fmt.Printf("total %d blocks, %d bytes was recorded\n", writeBlocks, writeBytes)
 			return
 		}
 
