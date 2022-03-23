@@ -73,11 +73,9 @@ func handleClientRequest(con net.Conn) {
 	clientReader := bufio.NewReader(con)
 
 	for {
-
 		clientRequest, err := clientReader.ReadString('\n')
 		switch err {
 		case nil:
-
 			if strings.HasPrefix(clientRequest, "req:") {
 				clientRequest = strings.TrimPrefix(clientRequest, "req:")
 
@@ -103,21 +101,18 @@ func handleClientRequest(con net.Conn) {
 				} else {
 					sendMessage("crc:true\n", con)
 				}
-
 			} else if strings.HasPrefix(clientRequest, "data:") {
 				clientRequest = strings.TrimPrefix(clientRequest, "data:")
 				data := []byte(clientRequest)
-
 				_, err := dst.WriteAt(data, int64(offset))
 				checkError(err)
 
-                sendMessage("data:true\n", con)
+				sendMessage("data:true\n", con)
 			} else {
 				sendMessage("error!", con)
 				log.Fatalln("unknown preffix!")
 				return
 			}
-
 		case io.EOF:
 			log.Println("client closed the connection by terminating the process")
 			return
