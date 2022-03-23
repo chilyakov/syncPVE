@@ -12,7 +12,7 @@ import (
 	"strconv"
 )
 
-//var writeBytes, offset, writeBlocks int
+const UID string = "1e028f50770445658114f05ba2b8ced5:"
 
 func checkError(e error) {
 	if e != nil {
