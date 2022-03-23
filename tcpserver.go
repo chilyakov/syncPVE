@@ -7,7 +7,18 @@ import (
 	"net"
 	"strings"
 	"strconv"
+//	"fmt"
+	"hash/crc64"
+	"os"
 )
+
+func checkError(e error) {
+	if e != nil {
+		log.Fatal(e)
+		return
+	}
+}
+
 
 func main() {
 	listener, err := net.Listen("tcp", "0.0.0.0:9999")
@@ -28,78 +39,85 @@ func main() {
 	}
 }
 
+func readBlock(f *os.File, size, offset int) []byte {
+	buffer := make([]byte, size)
+
+	n, err := f.ReadAt(buffer, int64(offset))
+	if err == io.EOF {
+		if n > 0 {
+			return buffer[0:n]
+		} else {
+			return nil
+		}
+	}
+
+	checkError(err)
+	return buffer[0:n]
+}
+
+func sendMessage(s string, con net.Conn) {
+	if _, err := con.Write([]byte(s)); err != nil {
+		log.Printf("failed to respond to client: %v\n", err)
+	}
+}
+
+
 func handleClientRequest(con net.Conn) {
 	defer con.Close()
+
+	crcTable := crc64.MakeTable(crc64.ISO)
+	var offset int
+	var dst *os.File
+	defer dst.Close()
 
 	clientReader := bufio.NewReader(con)
 
 	for {
-		// Waiting for the client request
-		//rq := make([]byte, 1)
-		//_, e := con.Read(rq)
-		//if e != nil {
-		//	log.Println(e)
-		//	return
-		//}
-		//log.Println(int(rq[0]))
-		//var res bool
+
 		clientRequest, err := clientReader.ReadString('\n')
 		switch err {
 		case nil:
-//			clientRequest := strings.TrimSpace(clientRequest)
-//			res = strings.HasPrefix(clientRequest, "req:")
-//			log.Println(res)
 
 			if strings.HasPrefix(clientRequest, "req:") {
 				clientRequest = strings.TrimPrefix(clientRequest, "req:")
 
 				data := strings.Split(clientRequest, ":")
 				fileName := data[0]
-				var bufferSize, offset int
-				var crc int64
-				if i, err := strconv.Atoi(data[1]); err == nil {
-					bufferSize = i
-				}
-                if i, err := strconv.Atoi(data[2]); err == nil {
-                    offset = i
-                }
-                if i, err := strconv.ParseInt(data[3], 10, 64); err == nil {
-                    crc = i
-                }
 
-//				if readFile(fileName, bufferSize, offset) != crc
+				bufferSize, err := strconv.Atoi(data[1])
+				checkError(err)
 
-				if _, err = con.Write([]byte("req:true\n")); err != nil {
-					log.Printf("failed to respond to client: %v\n", err)
+				offset, err = strconv.Atoi(data[2])
+				checkError(err)
+
+				crc, err := strconv.ParseUint(data[3], 0, 64)
+				checkError(err)
+
+				dst, err = os.OpenFile(fileName, os.O_RDWR|os.O_CREATE, 0644)
+				checkError(err)
+
+				dstData := readBlock(dst, bufferSize, offset)
+
+				if crc64.Checksum(dstData, crcTable) != crc {
+					sendMessage("crc:false\n", con)
+				} else {
+					sendMessage("crc:true\n", con)
 				}
-				log.Printf("filename: %s, bufferSize: %d, offset: %d, crc: %d", fileName, bufferSize, offset, crc)
 
 			} else if strings.HasPrefix(clientRequest, "data:") {
 				clientRequest = strings.TrimPrefix(clientRequest, "data:")
 				data := []byte(clientRequest)
 
+				_, err := dst.WriteAt(data, int64(offset))
+				checkError(err)
 
-
-                if _, err = con.Write([]byte("data:true\n")); err != nil {
-                    log.Printf("failed to respond to client: %v\n", err)
-                }
-				log.Println(data)
-				log.Println(string(data))
-
+                sendMessage("data:true\n", con)
 			} else {
-				if _, err = con.Write([]byte("err:true\n")); err != nil {
-					log.Printf("failed to respond to client: %v\n", err)
-				}
-				log.Fatalln("unknown error!")
+				sendMessage("error!", con)
+				log.Fatalln("unknown preffix!")
 				return
 			}
 
-//			if clientRequest == ":QUIT" {
-//				log.Println("client requested server to close the connection so closing")
-//				return
-//			} else {
-//				log.Println(clientRequest)
-//			}
 		case io.EOF:
 			log.Println("client closed the connection by terminating the process")
 			return
@@ -107,10 +125,5 @@ func handleClientRequest(con net.Conn) {
 			log.Printf("error: %v\n", err)
 			return
 		}
-
-		// Responding to the client request
-//		if _, err = con.Write([]byte("GOT IT!\n")); err != nil {
-//			log.Printf("failed to respond to client: %v\n", err)
-//		}
 	}
 }
