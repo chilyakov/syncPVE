@@ -111,8 +111,12 @@ func handleClientRequest(con net.Conn) {
 
 				log.Printf("%s:%d:%d:%d\n", fileName, bufferSize, offset, crc)
 			} else {
-				_, err := dst.WriteAt(readBuffer, int64(offset))
+				n, err := dst.WriteAt(readBuffer, int64(offset))
 				checkError(err)
+				if n > 0 {
+					log.Printf("write %d bytes, %d offset\n", n, offset)
+					sendMessage("write:true\n", con)
+				}
 				//log.Println(offset)
 				//log.Printf("%d bytes recorded\n", len(readBuffer))
 			}

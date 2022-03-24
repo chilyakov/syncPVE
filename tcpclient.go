@@ -64,11 +64,17 @@ func main() {
 	defer src.Close()
 
 	host := os.Args[3]
+
+	//tcpAddr, _ := net.ResolveTCPAddr("tcp4", host)
 	con, err := net.Dial("tcp", host)
+	//con, err := net.DialTCP("tcp", nil, tcpAddr)
 	if err != nil {
 		log.Fatalln(err)
 	}
 	defer con.Close()
+
+	//con.SetNoDelay(false)
+	//con.SetWriteBuffer(bufferSize)
 
 	dst := os.Args[4]
 	crcTable := crc64.MakeTable(crc64.ISO)
