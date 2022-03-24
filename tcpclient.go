@@ -21,10 +21,10 @@ func checkError(e error) {
 	}
 }
 
-func readBlock(f *os.File, size, offset int) []byte {
+func readBlock(f *os.File, size int, offset int64) []byte {
 	buffer := make([]byte, size)
 
-	n, err := f.ReadAt(buffer, int64(offset))
+	n, err := f.ReadAt(buffer, offset)
 	if err == io.EOF {
 		if n > 0 {
 			return buffer[0:n]
@@ -51,8 +51,8 @@ func sendMessageBytes(b []byte, con net.Conn) {
 
 func main() {
 	arguments := os.Args
-	if len(arguments) != 4 {
-		fmt.Println("<buffer size> <file src> <file dst>")
+	if len(arguments) != 5 {
+		fmt.Println("<buffer size> <file src> <host:port dst> <file dst>")
 		return
 	}
 
@@ -63,15 +63,16 @@ func main() {
 	checkError(err)
 	defer src.Close()
 
-	con, err := net.Dial("tcp", "0.0.0.0:9999")
+	host := os.Args[3]
+	con, err := net.Dial("tcp", host)
 	if err != nil {
 		log.Fatalln(err)
 	}
 	defer con.Close()
 
-	dst := os.Args[3]
+	dst := os.Args[4]
 	crcTable := crc64.MakeTable(crc64.ISO)
-	offset := 0
+	var offset int64 = 0
 
 	serverReader := bufio.NewReader(con)
 
@@ -86,7 +87,7 @@ func main() {
 
 		crc := crc64.Checksum(srcData, crcTable)
 		request := fmt.Sprintf("%s%s:%d:%d:%d:", UID, dst, len(srcData), offset, crc)
-		fmt.Println(request)
+		//fmt.Println(request)	//debug
 		sendMessage(request, con)
 
 		serverRequest, err := serverReader.ReadString('\n')
@@ -94,12 +95,12 @@ func main() {
 		case nil:
 			if strings.TrimSpace(serverRequest) == "crc:false" {
 				sendMessageBytes(srcData, con)
-				offset += bufferSize
+				offset += int64(bufferSize)
 				break
 			}
 
 			if strings.TrimSpace(serverRequest) == "crc:true" {
-				offset += bufferSize
+				offset += int64(bufferSize)
 				break
 			}
 

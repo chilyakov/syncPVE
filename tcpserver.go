@@ -7,7 +7,6 @@ import (
 	"net"
 	"strconv"
 	"strings"
-	//	"fmt"
 	"hash/crc64"
 	"os"
 )
@@ -22,7 +21,7 @@ func checkError(e error) {
 }
 
 func main() {
-	listener, err := net.Listen("tcp", "0.0.0.0:9999")
+	listener, err := net.Listen("tcp", "0.0.0.0:7230")
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -40,7 +39,7 @@ func main() {
 	}
 }
 
-func readBlock(f *os.File, size, offset int) []byte {
+func readBlock(f *os.File, size int, offset uint64) []byte {
 	buffer := make([]byte, size)
 
 	n, err := f.ReadAt(buffer, int64(offset))
@@ -66,7 +65,7 @@ func handleClientRequest(con net.Conn) {
 	defer con.Close()
 
 	crcTable := crc64.MakeTable(crc64.ISO)
-	var offset int
+	var offset uint64
 	var dst *os.File
 	defer dst.Close()
 
@@ -80,7 +79,6 @@ func handleClientRequest(con net.Conn) {
 		switch err {
 		case nil:
 			clientRequest := string(readBuffer)
-			//log.Println(readBuffer)
 
 			if strings.HasPrefix(clientRequest, UID) {
 				clientRequest = strings.TrimPrefix(clientRequest, UID)
@@ -92,15 +90,17 @@ func handleClientRequest(con net.Conn) {
 				checkError(err)
 				readBuffer = make([]byte, bufferSize)
 
-				offset, err = strconv.Atoi(data[2])
+				offset, err = strconv.ParseUint(data[2], 0, 64)
 				checkError(err)
 
 				crc, err := strconv.ParseUint(data[3], 0, 64)
 				checkError(err)
 
-				dst, err = os.OpenFile(fileName, os.O_RDWR|os.O_CREATE, 0644)
-				checkError(err)
-
+				_, err = dst.Stat()
+				if err != nil {
+					dst, err = os.OpenFile(fileName, os.O_RDWR|os.O_CREATE, 0644)
+					checkError(err)
+				}
 				dstData := readBlock(dst, bufferSize, offset)
 
 				if crc64.Checksum(dstData, crcTable) != crc {
@@ -111,15 +111,10 @@ func handleClientRequest(con net.Conn) {
 
 				log.Printf("%s:%d:%d:%d\n", fileName, bufferSize, offset, crc)
 			} else {
-				//if strings.HasPrefix(clientRequest, "data:") {
-				//clientRequest = strings.TrimPrefix(clientRequest, "data:")
-				//data := []byte(clientRequest)
-
 				_, err := dst.WriteAt(readBuffer, int64(offset))
 				checkError(err)
-				//log.Println(string(readBuffer))
-				log.Printf("%d bytes recorded\n", len(readBuffer))
-				//sendMessage("data:true\n", con)
+				//log.Println(offset)
+				//log.Printf("%d bytes recorded\n", len(readBuffer))
 			}
 
 		case io.EOF:
