@@ -37,11 +37,14 @@ func readBlock(f *os.File, size, offset int) []byte {
 	return buffer[0:n]
 }
 
-func getBlockCRC() {
-}
-
 func sendMessage(s string, con net.Conn) {
     if _, err := con.Write([]byte(s)); err != nil {
+        log.Printf("failed to respond to client: %v\n", err)
+    }
+}
+
+func sendMessageBytes(b []byte, con net.Conn) {
+    if _, err := con.Write(b); err != nil {
         log.Printf("failed to respond to client: %v\n", err)
     }
 }
@@ -70,80 +73,43 @@ func main() {
     crcTable := crc64.MakeTable(crc64.ISO)
     offset := 0
 
-//-------------// end init //-----------------//
-
-	srcData := readBlock(src, bufferSize, offset)
-	if srcData == nil {
-		return //end of source file
-	}
-
- 	crc := crc64.Checksum(srcData, crcTable)
-	request := fmt.Sprintf("req:%s:%d:%d:%d:", dst,bufferSize,offset,crc)
-    fmt.Println(request)
-	sendMessage(request, con)
-
-
-
-//	clientReader := bufio.NewReader(os.Stdin)
 	serverReader := bufio.NewReader(con)
-	//bf := []byte{001, 33}
 
-	//if _, err = con.Write(bf); err != nil {
-	//	log.Printf("failed to send the client request: %v\n", err)
-	//}
+	//end init
 
+	for {
 
+		srcData := readBlock(src, bufferSize, offset)
+		if srcData == nil {
+			return //end of source file
+		}
 
-//	for {
-		// Waiting for the client request
+		crc := crc64.Checksum(srcData, crcTable)
+		request := fmt.Sprintf("%s%s:%d:%d:%d:", UID,dst,len(srcData),offset,crc)
+    	fmt.Println(request)
+		sendMessage(request, con)
+
 		serverRequest, err := serverReader.ReadString('\n')
 		switch err {
 		case nil:
 			if strings.TrimSpace(serverRequest) == "crc:false" {
-				res := "data:" + string(srcData)
-				log.Println(res)
-				sendMessage(res, con)
+				sendMessageBytes(srcData, con)
 				offset += bufferSize
+				break
 			}
 
             if strings.TrimSpace(serverRequest) == "crc:true" {
 				offset += bufferSize
-                //send next request
+				break
             }
+
+		case io.EOF:
+			log.Println("server closed the connection")
+			return
+		default:
+			log.Printf("server error: %v\n", err)
+			return
 		}
 
-		//check eof
-		//read next block
-		//send crc
-		//get response, check crc
-		//read next block or send data
-
-//		switch err {
-//		case nil:
-//			clientRequest := strings.TrimSpace(clientRequest)
-//			if _, err = con.Write([]byte(clientRequest + "\n")); err != nil {
-//				log.Printf("failed to send the client request: %v\n", err)
-//			}
-//		case io.EOF:
-//			log.Println("client closed the connection")
-//			return
-//		default:
-//			log.Printf("client error: %v\n", err)
-//			return
-//		}
-
-		// Waiting for the server response
-//		serverResponse, err := serverReader.ReadString('\n')
-
-//		switch err {
-//		case nil:
-//			log.Println(strings.TrimSpace(serverResponse))
-//		case io.EOF:
-//			log.Println("server closed the connection")
-//			return
-//		default:
-//			log.Printf("server error: %v\n", err)
-//			return
-//		}
-//	}
+	}
 }

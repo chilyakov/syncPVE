@@ -12,13 +12,14 @@ import (
 	"os"
 )
 
+const UID string = "1e028f50770445658114f05ba2b8ced5:"
+
 func checkError(e error) {
 	if e != nil {
 		log.Fatal(e)
 		return
 	}
 }
-
 
 func main() {
 	listener, err := net.Listen("tcp", "0.0.0.0:9999")
@@ -71,19 +72,26 @@ func handleClientRequest(con net.Conn) {
 	defer dst.Close()
 
 	clientReader := bufio.NewReader(con)
+	readBuffer := make([]byte, 512)
 
 	for {
-		clientRequest, err := clientReader.ReadString('\n')
+
+		_, err := clientReader.Read(readBuffer)
+
 		switch err {
 		case nil:
-			if strings.HasPrefix(clientRequest, "req:") {
-				clientRequest = strings.TrimPrefix(clientRequest, "req:")
+			clientRequest := string(readBuffer)
+			//log.Println(readBuffer)
+
+			if strings.HasPrefix(clientRequest, UID) {
+				clientRequest = strings.TrimPrefix(clientRequest, UID)
 
 				data := strings.Split(clientRequest, ":")
 				fileName := data[0]
 
 				bufferSize, err := strconv.Atoi(data[1])
 				checkError(err)
+				readBuffer = make([]byte, bufferSize)
 
 				offset, err = strconv.Atoi(data[2])
 				checkError(err)
@@ -101,18 +109,20 @@ func handleClientRequest(con net.Conn) {
 				} else {
 					sendMessage("crc:true\n", con)
 				}
-			} else if strings.HasPrefix(clientRequest, "data:") {
-				clientRequest = strings.TrimPrefix(clientRequest, "data:")
-				data := []byte(clientRequest)
-				_, err := dst.WriteAt(data, int64(offset))
-				checkError(err)
 
-				sendMessage("data:true\n", con)
+				log.Printf("%s:%d:%d:%d\n", fileName, bufferSize, offset, crc)
 			} else {
-				sendMessage("error!", con)
-				log.Fatalln("unknown preffix!")
-				return
+				//if strings.HasPrefix(clientRequest, "data:") {
+				//clientRequest = strings.TrimPrefix(clientRequest, "data:")
+				//data := []byte(clientRequest)
+
+				_, err := dst.WriteAt(readBuffer, int64(offset))
+				checkError(err)
+				//log.Println(string(readBuffer))
+				log.Printf("%d bytes recorded\n", len(readBuffer))
+                //sendMessage("data:true\n", con)
 			}
+
 		case io.EOF:
 			log.Println("client closed the connection by terminating the process")
 			return
