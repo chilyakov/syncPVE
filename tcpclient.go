@@ -1,15 +1,15 @@
 package main
- 
+
 import (
 	"bufio"
+	"fmt"
+	"hash/crc64"
 	"io"
 	"log"
 	"net"
 	"os"
-	"strings"
-	"fmt"
-	"hash/crc64"
 	"strconv"
+	"strings"
 )
 
 const UID string = "1e028f50770445658114f05ba2b8ced5:"
@@ -38,15 +38,15 @@ func readBlock(f *os.File, size, offset int) []byte {
 }
 
 func sendMessage(s string, con net.Conn) {
-    if _, err := con.Write([]byte(s)); err != nil {
-        log.Printf("failed to respond to client: %v\n", err)
-    }
+	if _, err := con.Write([]byte(s)); err != nil {
+		log.Printf("failed to respond to client: %v\n", err)
+	}
 }
 
 func sendMessageBytes(b []byte, con net.Conn) {
-    if _, err := con.Write(b); err != nil {
-        log.Printf("failed to respond to client: %v\n", err)
-    }
+	if _, err := con.Write(b); err != nil {
+		log.Printf("failed to respond to client: %v\n", err)
+	}
 }
 
 func main() {
@@ -70,8 +70,8 @@ func main() {
 	defer con.Close()
 
 	dst := os.Args[3]
-    crcTable := crc64.MakeTable(crc64.ISO)
-    offset := 0
+	crcTable := crc64.MakeTable(crc64.ISO)
+	offset := 0
 
 	serverReader := bufio.NewReader(con)
 
@@ -85,8 +85,8 @@ func main() {
 		}
 
 		crc := crc64.Checksum(srcData, crcTable)
-		request := fmt.Sprintf("%s%s:%d:%d:%d:", UID,dst,len(srcData),offset,crc)
-    	fmt.Println(request)
+		request := fmt.Sprintf("%s%s:%d:%d:%d:", UID, dst, len(srcData), offset, crc)
+		fmt.Println(request)
 		sendMessage(request, con)
 
 		serverRequest, err := serverReader.ReadString('\n')
@@ -98,10 +98,10 @@ func main() {
 				break
 			}
 
-            if strings.TrimSpace(serverRequest) == "crc:true" {
+			if strings.TrimSpace(serverRequest) == "crc:true" {
 				offset += bufferSize
 				break
-            }
+			}
 
 		case io.EOF:
 			log.Println("server closed the connection")

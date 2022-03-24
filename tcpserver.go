@@ -5,9 +5,9 @@ import (
 	"io"
 	"log"
 	"net"
-	"strings"
 	"strconv"
-//	"fmt"
+	"strings"
+	//	"fmt"
 	"hash/crc64"
 	"os"
 )
@@ -61,7 +61,6 @@ func sendMessage(s string, con net.Conn) {
 		log.Printf("failed to respond to client: %v\n", err)
 	}
 }
-
 
 func handleClientRequest(con net.Conn) {
 	defer con.Close()
@@ -120,7 +119,7 @@ func handleClientRequest(con net.Conn) {
 				checkError(err)
 				//log.Println(string(readBuffer))
 				log.Printf("%d bytes recorded\n", len(readBuffer))
-                //sendMessage("data:true\n", con)
+				//sendMessage("data:true\n", con)
 			}
 
 		case io.EOF:
