@@ -44,6 +44,10 @@ func sendMessage(s string, con net.Conn) {
 }
 
 func sendMessageBytes(b []byte, con net.Conn) {
+//	if _, err := io.CopyBuffer(con, r1, b); err != nil {
+//		log.Fatal(err)
+//	}
+
 	if _, err := con.Write(b); err != nil {
 		log.Printf("failed to respond to client: %v\n", err)
 	}
