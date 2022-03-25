@@ -115,7 +115,7 @@ func handleClientRequest(con net.Conn) {
 				checkError(err)
 				if n > 0 {
 					log.Printf("write %d bytes, %d offset\n", n, offset)
-					sendMessage("write:true\n", con)
+					//sendMessage("crc:true\n", con)
 				}
 				//log.Println(offset)
 				//log.Printf("%d bytes recorded\n", len(readBuffer))
