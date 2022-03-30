@@ -72,7 +72,7 @@ func handleClientRequest(con net.Conn) {
 
 	crcTable := crc64.MakeTable(crc64.ISO)
 	var offset, blockOffset uint64
-	var blockSize, maxBuffer int
+	var blockSize, maxBuffer, bytesRec int
 	var dst *os.File
 	defer dst.Close()
 
@@ -126,6 +126,7 @@ func handleClientRequest(con net.Conn) {
 					n, err := dst.WriteAt(readBuffer[:bytes], int64(offset+blockOffset))
 					checkError(err)
 					if n > 0 {
+						bytesRec += n
 						//log.Printf("write %d bytes, %d offset\n", n, offset+blockOffset)
 					}
 					blockOffset += uint64(bytes)
@@ -177,8 +178,9 @@ func handleClientRequest(con net.Conn) {
 
 		case io.EOF:
 			//log.Println("max buffer size:", maxBuffer)
+			log.Printf("client closed the connection by EOF. %d bytes was recorded", bytesRec)
 			maxBuffer = 0
-			log.Println("client closed the connection by terminating the process")
+			bytesRec = 0
 			return
 		default:
 			log.Printf("error: %v\n", err)
