@@ -166,12 +166,12 @@ func handleClientRequest(con net.Conn) {
 								sendMessage("crc:true\n", con)
 							}
 						} else {
-							log.Fatal("error line 164 (detect request packet)")
+							log.Fatal("error line 169 (detect request packet)")
 						}
 					}
 
 				} else {
-					log.Println("debug line 141")
+					log.Println("debug line 174")
 					blockOffset = 0
 				}
 			}
@@ -181,6 +181,7 @@ func handleClientRequest(con net.Conn) {
 			log.Printf("client closed the connection by EOF. %d bytes was recorded", bytesRec)
 			maxBuffer = 0
 			bytesRec = 0
+			dst.Close()
 			return
 		default:
 			log.Printf("error: %v\n", err)
