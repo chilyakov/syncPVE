@@ -8,11 +8,12 @@ import (
 	"log"
 	"net"
 	"os"
-	"strconv"
+//	"strconv"
 	"strings"
 )
 
 const UID string = "1e028f50770445658114f05ba2b8ced5:"
+const blockSize int = 524288
 
 func checkError(e error) {
 	if e != nil {
@@ -51,27 +52,30 @@ func sendMessageBytes(b []byte, con net.Conn) {
 
 func main() {
 	arguments := os.Args
-	if len(arguments) != 5 {
-		fmt.Println("<buffer size> <file src> <host:port dst> <file dst>")
+	if len(arguments) != 4 {
+		fmt.Println("<file src> <host dst> <file dst>")
 		return
 	}
 
-	bufferSize, err := strconv.Atoi(os.Args[1])
-	checkError(err)
+	//blockSize, err := strconv.Atoi(os.Args[1])
+	//checkError(err)
 
-	src, err := os.Open(os.Args[2])
+	src, err := os.Open(arguments[1])
 	checkError(err)
 	defer src.Close()
 
-	host := os.Args[3]
+	host := arguments[2] + ":7231"
 
-	con, err := net.Dial("tcp", host)
+	tcpAddr, _ := net.ResolveTCPAddr("tcp4", host)
+	con, err := net.DialTCP("tcp", nil, tcpAddr)
 	if err != nil {
 		log.Fatalln(err)
 	}
 	defer con.Close()
 
-	dst := os.Args[4]
+	con.SetWriteBuffer(blockSize)
+
+	dst := arguments[3]
 	crcTable := crc64.MakeTable(crc64.ISO)
 	var offset int64 = 0
 
@@ -80,14 +84,14 @@ func main() {
 	//end init
 
 	// first request
-	srcData := readBlock(src, bufferSize, offset)
+	srcData := readBlock(src, blockSize, offset)
 	if srcData == nil {
 		return //end of source file
 	}
 
 	crc := crc64.Checksum(srcData, crcTable)
 	request := fmt.Sprintf("%s%s:%d:%d:%d:", UID, dst, len(srcData), offset, crc)
-	fmt.Println(request)    //debug
+	//fmt.Println(request) //debug
 	sendMessage(request, con)
 
 	// main loop
@@ -96,37 +100,36 @@ func main() {
 		serverRequest, err := serverReader.ReadString('\n')
 		switch err {
 		case nil:
-			log.Println(strings.TrimSpace(serverRequest))
 
 			if strings.TrimSpace(serverRequest) == "crc:false" {
 				sendMessageBytes(srcData, con)
-				offset += int64(bufferSize)
+				offset += int64(blockSize)
 
-				srcData = readBlock(src, bufferSize, offset)
+				srcData = readBlock(src, blockSize, offset)
 				if srcData == nil {
 					return //end of source file
 				}
 
 				crc = crc64.Checksum(srcData, crcTable)
 				request = fmt.Sprintf("%s%s:%d:%d:%d:", UID, dst, len(srcData), offset, crc)
-				fmt.Println(request)    //debug
+				//fmt.Println(request) //debug
 				sendMessage(request, con)
 
 				break
 			}
 
 			if strings.TrimSpace(serverRequest) == "crc:true" {
-				offset += int64(bufferSize)
+				offset += int64(blockSize)
 
-                		srcData = readBlock(src, bufferSize, offset)
-                		if srcData == nil {
-                    			return //end of source file
-                		}
+				srcData = readBlock(src, blockSize, offset)
+				if srcData == nil {
+					return //end of source file
+				}
 
-                		crc = crc64.Checksum(srcData, crcTable)
-                		request = fmt.Sprintf("%s%s:%d:%d:%d:", UID, dst, len(srcData), offset, crc)
-                		fmt.Println(request)    //debug
-                		sendMessage(request, con)
+				crc = crc64.Checksum(srcData, crcTable)
+				request = fmt.Sprintf("%s%s:%d:%d:%d:", UID, dst, len(srcData), offset, crc)
+				//fmt.Println(request) //debug
+				sendMessage(request, con)
 
 				break
 			}
