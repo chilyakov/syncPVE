@@ -8,8 +8,8 @@ import (
 	"os"
 	"strconv"
 	"strings"
-//	"os/signal"
-//	"syscall"
+	//	"os/signal"
+	//	"syscall"
 )
 
 const UID string = "1e028f50770445658114f05ba2b8ced5:"
@@ -31,59 +31,59 @@ func main() {
 
 	//errorLog := log.New(flog, "ERROR\t", log.Ldate|log.Ltime)
 
-    host, err := net.ResolveTCPAddr("tcp4", "0.0.0.0"+":7231")
-    if err != nil {
-        log.Fatalln(err)
-    }
+	host, err := net.ResolveTCPAddr("tcp4", "0.0.0.0"+":7231")
+	if err != nil {
+		log.Fatalln(err)
+	}
 
-    listener, err := net.ListenTCP("tcp", host)
-    if err != nil {
-        log.Fatalln(err)
-    }
-    defer listener.Close()
+	listener, err := net.ListenTCP("tcp", host)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	defer listener.Close()
 
 	infoLog := log.New(flog, "INFO\t", log.Ldate|log.Ltime)
 	infoLog.Printf("* * * Start server * * *")
 
-//	signalChanel := make(chan os.Signal, 1)
-//	signal.Notify(signalChanel,
-//		syscall.SIGHUP,
-//		syscall.SIGINT,
-//		syscall.SIGTERM,
-//		syscall.SIGQUIT)
+	//	signalChanel := make(chan os.Signal, 1)
+	//	signal.Notify(signalChanel,
+	//		syscall.SIGHUP,
+	//		syscall.SIGINT,
+	//		syscall.SIGTERM,
+	//		syscall.SIGQUIT)
 
-//	exit_chan := make(chan int)
-//	go func() {
-//		for {
-//			s := <-signalChanel
-//			switch s {
-			// kill -SIGHUP XXXX [XXXX - идентификатор процесса для программы]
-//			case syscall.SIGHUP:
-//				infoLog.Println("Signal hang up triggered.")
+	//	exit_chan := make(chan int)
+	//	go func() {
+	//		for {
+	//			s := <-signalChanel
+	//			switch s {
+	// kill -SIGHUP XXXX [XXXX - идентификатор процесса для программы]
+	//			case syscall.SIGHUP:
+	//				infoLog.Println("Signal hang up triggered.")
 
-				// kill -SIGINT XXXX или Ctrl+c  [XXXX - идентификатор процесса для программы]
-//			case syscall.SIGINT:
-//				infoLog.Println("Signal interrupt triggered.")
-//				exit_chan <- 1
+	// kill -SIGINT XXXX или Ctrl+c  [XXXX - идентификатор процесса для программы]
+	//			case syscall.SIGINT:
+	//				infoLog.Println("Signal interrupt triggered.")
+	//				exit_chan <- 1
 
-				// kill -SIGTERM XXXX [XXXX - идентификатор процесса для программы]
-//			case syscall.SIGTERM:
-//				infoLog.Println("Signal terminte triggered.")
-//				exit_chan <- 1
+	// kill -SIGTERM XXXX [XXXX - идентификатор процесса для программы]
+	//			case syscall.SIGTERM:
+	//				infoLog.Println("Signal terminte triggered.")
+	//				exit_chan <- 1
 
-				// kill -SIGQUIT XXXX [XXXX - идентификатор процесса для программы]
-//			case syscall.SIGQUIT:
-//				infoLog.Println("Signal quit triggered.")
-//				exit_chan <- 0
-//
-//			default:
-//				infoLog.Println("Unknown signal.")
-//				exit_chan <- 1
-//			}
-//		}
-//	}()
-//	exitCode := <-exit_chan
-//	os.Exit(exitCode)
+	// kill -SIGQUIT XXXX [XXXX - идентификатор процесса для программы]
+	//			case syscall.SIGQUIT:
+	//				infoLog.Println("Signal quit triggered.")
+	//				exit_chan <- 0
+	//
+	//			default:
+	//				infoLog.Println("Unknown signal.")
+	//				exit_chan <- 1
+	//			}
+	//		}
+	//	}()
+	//	exitCode := <-exit_chan
+	//	os.Exit(exitCode)
 
 	for {
 		con, err := listener.Accept()
@@ -185,11 +185,11 @@ func handleClientRequest(con net.Conn, flog *os.File) {
 					sendMessage("Unknown blockSize. Wrong request?\n", con, errorLog)
 					return
 				} else if fileName == "" {
-                    sendMessage("Unknown fileName. Wrong request?\n", con, errorLog)
-                    return
+					sendMessage("Unknown fileName. Wrong request?\n", con, errorLog)
+					return
 				} else if crc == 0 {
-                    sendMessage("Unknown CRC value. Wrong request?\n", con, errorLog)
-                    return
+					sendMessage("Unknown CRC value. Wrong request?\n", con, errorLog)
+					return
 				}
 
 				if blockOffset < uint64(blockSize) {
