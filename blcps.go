@@ -23,7 +23,7 @@ func checkError(e error) {
 
 func main() {
 
-	flog, err := os.OpenFile("/opt/blcp/blcps.log", os.O_APPEND|os.O_RDWR|os.O_CREATE, 0666)
+	flog, err := os.OpenFile("/dev/null", os.O_APPEND|os.O_RDWR|os.O_CREATE, 0666)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -128,9 +128,10 @@ func handleClientRequest(con net.Conn, flog *os.File) {
 	infoLog.Printf("Connect from %s", con.RemoteAddr())
 
 	crcTable := crc64.MakeTable(crc64.ISO)
-	var offset, blockOffset uint64
+	var offset, blockOffset, crc uint64
 	var blockSize, maxBuffer, bytesRec int
 	var dst *os.File
+	var fileName string
 	defer dst.Close()
 
 	readBuffer := make([]byte, 512)
@@ -148,7 +149,7 @@ func handleClientRequest(con net.Conn, flog *os.File) {
 
 			if string(readBuffer[0:33]) == UID {
 				data := strings.Split(string(readBuffer[33:]), ":")
-				fileName := data[0]
+				fileName = data[0]
 
 				blockSize, err = strconv.Atoi(data[1])
 				checkError(err)
@@ -158,7 +159,7 @@ func handleClientRequest(con net.Conn, flog *os.File) {
 				offset, err = strconv.ParseUint(data[2], 0, 64)
 				checkError(err)
 
-				crc, err := strconv.ParseUint(data[3], 0, 64)
+				crc, err = strconv.ParseUint(data[3], 0, 64)
 				checkError(err)
 
 				_, err = dst.Stat()
@@ -180,6 +181,17 @@ func handleClientRequest(con net.Conn, flog *os.File) {
 			} else {
 				//log.Println(bytes, blockSize, offset, blockOffset)
 
+				if blockSize == 0 {
+					sendMessage("Unknown blockSize. Wrong request?\n", con, errorLog)
+					return
+				} else if fileName == "" {
+                    sendMessage("Unknown fileName. Wrong request?\n", con, errorLog)
+                    return
+				} else if crc == 0 {
+                    sendMessage("Unknown CRC value. Wrong request?\n", con, errorLog)
+                    return
+				}
+
 				if blockOffset < uint64(blockSize) {
 					n, err := dst.WriteAt(readBuffer[:bytes], int64(offset+blockOffset))
 					checkError(err)
@@ -198,7 +210,7 @@ func handleClientRequest(con net.Conn, flog *os.File) {
 
 						if string(blck[:33]) == UID {
 							data := strings.Split(string(blck[33:]), ":")
-							fileName := data[0]
+							fileName = data[0]
 
 							blockSize, err = strconv.Atoi(data[1])
 							checkError(err)
@@ -208,7 +220,7 @@ func handleClientRequest(con net.Conn, flog *os.File) {
 							offset, err = strconv.ParseUint(data[2], 0, 64)
 							checkError(err)
 
-							crc, err := strconv.ParseUint(data[3], 0, 64)
+							crc, err = strconv.ParseUint(data[3], 0, 64)
 							checkError(err)
 
 							_, err = dst.Stat()
@@ -224,12 +236,13 @@ func handleClientRequest(con net.Conn, flog *os.File) {
 								sendMessage("crc:true\n", con, errorLog)
 							}
 						} else {
-							errorLog.Fatal("error line 181 (detect request packet)")
+							errorLog.Println("error line 232 (detect request packet)")
+							return
 						}
 					}
 
 				} else {
-					errorLog.Println("debug line 187 (unkown buffer size?)")
+					errorLog.Println("debug line 238 (unkown buffer size?)")
 					blockOffset = 0
 				}
 			}
