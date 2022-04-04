@@ -36,7 +36,7 @@ for file in ${arr[@]}; do
     #echo $file
     #dd if=/mnt/pvedata$file bs=2M of=/mnt/sync$file &
     #/usr/bin/rsync -e "ssh -c aes128-gcm@openssh.com -o Compression=no -x" -B 128k -a --inplace --no-whole-file $file node-agregt.sync:/$file &
-    /opt/blcp/blcpc $file 1572864 node-agregt.sync $file
+    /opt/blcp/blcpc $file 1572864 node-agregt.sync $file &
 done
 
 #/usr/bin/rsync -e "ssh -c aes128-gcm@openssh.com -o Compression=no -x" -a --inplace --no-whole-file $images$kvm node1-engenr.sync://$images &
