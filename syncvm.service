@@ -1,0 +1,13 @@
+[Unit]
+Description=Sync RAW disks Virtual Machines
+After=network.target
+
+[Service]
+Type=simple
+User=root
+Group=root
+ExecStart=/opt/syncvm/syncvm
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
