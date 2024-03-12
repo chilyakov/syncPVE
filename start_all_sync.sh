@@ -1,6 +1,6 @@
 #!/bin/bash
 
-systemctl restart syncvm.service
+systemctl start syncvm.service
 sleep 5
 
 

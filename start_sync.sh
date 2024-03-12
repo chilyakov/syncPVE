@@ -1,7 +1,7 @@
 #!/bin/bash
 
 dir="/mnt/pvedata"
-dst="node-engenr.sync"
+dst="node2-engenr.sync"
 
 if [[ $# > 0 ]]; then
 
@@ -13,7 +13,7 @@ if [[ $# > 0 ]]; then
            /usr/bin/rsync -e "ssh -c aes128-gcm@openssh.com -o Compression=no -x" -B 128K -a --inplace --no-whole-file $f $dst:/$f
         done
 
-        sleep 60
+        sleep 1800
     done
 
 fi

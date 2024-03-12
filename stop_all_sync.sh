@@ -1,5 +1,5 @@
 #!/bin/bash
 
-systemctl restart syncvm.service
+systemctl stop syncvm.service
 #sleep 10
 #killall rsync -g

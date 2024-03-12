@@ -38,7 +38,10 @@ then
 
     echo "post-stop $vmid"
 
-    # Stop sync
+    # Stop sync loop
     echo "$vmid:stop:" | nc localhost 7011 -w 1
+
+    # Final sync once on stop
+    #/opt/syncvm/sync_once.sh $vmid &
 
 fi
